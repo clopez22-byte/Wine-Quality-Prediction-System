@@ -4,7 +4,7 @@
 A small wine-production business needs a consistent preliminary way to screen red-wine samples using recorded physicochemical measurements.
 
 ## Dataset
-This classroom prototype uses the UCI Machine Learning Repository Red Wine Quality CSV:
+This prototype uses the UCI Machine Learning Repository Red Wine Quality CSV:
 https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv
 
 ## Prediction rule

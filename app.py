@@ -20,25 +20,26 @@ st.caption(
 )
 
 
-# Load dataset
+
 @st.cache_data
 def load_dataset():
     data = pd.read_csv(
         "wine_quality.csv",
         sep=",",
+        engine="python",
         encoding="utf-8-sig"
     )
 
+    # Remove unwanted spaces from column names
     data.columns = data.columns.str.strip()
 
+    # Verify that the dataset has 12 columns
     if "quality" not in data.columns:
         raise ValueError(
-            f"Quality column missing. Found columns: {data.columns.tolist()}"
+            f"Expected quality column. Found: {data.columns.tolist()}"
         )
 
     return data
-
-
 
 
 

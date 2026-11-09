@@ -24,23 +24,39 @@ st.caption(
 # Load dataset
 @st.cache_data
 def load_dataset():
-    data = pd.read_csv("wine_quality.csv")
+    # Automatically detect comma or semicolon separators
+    data = pd.read_csv(
+        "wine_quality.csv",
+        sep=None,
+        engine="python"
+    )
+
+    # Clean column names
+    data.columns = data.columns.str.strip()
+
+    # Check required target column
+    if "quality" not in data.columns:
+        raise ValueError(
+            "The quality column is missing. "
+            "Check the wine_quality.csv file and its column separator."
+        )
+
     return data
 
 
-# Train model directly from the dataset
+
 @st.cache_resource
 def load_model():
-    data = pd.read_csv("wine_quality.csv")
+    data = load_dataset()
+
     data = data.drop_duplicates().copy()
 
-    # Define prediction target
+    # Prediction target
     y = (data["quality"] >= 6).astype(int)
 
-    # Remove target from input features
+    # Input features
     X = data.drop(columns=["quality"])
 
-    # Create Random Forest pipeline
     model = Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
         ("scaler", StandardScaler()),
@@ -51,10 +67,10 @@ def load_model():
         ))
     ])
 
-    # Train using the available dataset
     model.fit(X, y)
 
     return model
+
 
 
 # Load application data

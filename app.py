@@ -18,7 +18,7 @@ def load_dataset():
 
 st.title("🍷 Wine Quality Prediction System")
 st.caption(
-    "Section B classroom prototype for preliminary red-wine quality classification. "
+    "Prototype for preliminary red-wine quality classification. "
     "Predictions are screening aids, not final quality-control decisions."
 )
 

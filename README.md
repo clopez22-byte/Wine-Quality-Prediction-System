@@ -20,8 +20,8 @@ Python, pandas, scikit-learn, Random Forest, joblib, Streamlit, and GitHub.
 - `train_model.py`: downloads and inspects the dataset, preprocesses it, trains and evaluates the model, and saves `wine_model.pkl`.
 - `app.py`: Streamlit interface for dataset preview, CSV upload, prediction, and result download.
 - `requirements.txt`: required Python packages.
-- `wine_quality.csv`: generated dataset file.
-- `wine_model.pkl`: generated trained model.
+- `wine_quality.csv`: dataset file.
+- `wine_model.pkl`: trained model.
 
 ## Installation and running
 1. Install Python 3.10 or later.

@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 
@@ -24,24 +23,22 @@ st.caption(
 # Load dataset
 @st.cache_data
 def load_dataset():
-    # Automatically detect comma or semicolon separators
     data = pd.read_csv(
         "wine_quality.csv",
-        sep=None,
-        engine="python"
+        sep=",",
+        encoding="utf-8-sig"
     )
 
-    # Clean column names
     data.columns = data.columns.str.strip()
 
-    # Check required target column
     if "quality" not in data.columns:
         raise ValueError(
-            "The quality column is missing. "
-            "Check the wine_quality.csv file and its column separator."
+            f"Quality column missing. Found columns: {data.columns.tolist()}"
         )
 
     return data
+
+
 
 
 
@@ -51,10 +48,8 @@ def load_model():
 
     data = data.drop_duplicates().copy()
 
-    # Prediction target
     y = (data["quality"] >= 6).astype(int)
 
-    # Input features
     X = data.drop(columns=["quality"])
 
     model = Pipeline([
@@ -70,6 +65,7 @@ def load_model():
     model.fit(X, y)
 
     return model
+
 
 
 

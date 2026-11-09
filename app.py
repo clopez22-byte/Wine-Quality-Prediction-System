@@ -1,6 +1,11 @@
+
 import streamlit as st
 import pandas as pd
-import joblib
+
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
 
 st.set_page_config(
     page_title="Wine Quality Predictor",
@@ -8,83 +13,157 @@ st.set_page_config(
     layout="wide"
 )
 
-@st.cache_resource
-def load_model():
-    return joblib.load("wine_model.pkl")
-
-@st.cache_data
-def load_dataset():
-    return pd.read_csv("wine_quality.csv")
-
 st.title("🍷 Wine Quality Prediction System")
+
 st.caption(
     "Prototype for preliminary red-wine quality classification. "
     "Predictions are screening aids, not final quality-control decisions."
 )
 
+
+# Load dataset
+@st.cache_data
+def load_dataset():
+    data = pd.read_csv("wine_quality.csv")
+    return data
+
+
+# Train model directly from the dataset
+@st.cache_resource
+def load_model():
+    data = pd.read_csv("wine_quality.csv")
+    data = data.drop_duplicates().copy()
+
+    # Define prediction target
+    y = (data["quality"] >= 6).astype(int)
+
+    # Remove target from input features
+    X = data.drop(columns=["quality"])
+
+    # Create Random Forest pipeline
+    model = Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler()),
+        ("classifier", RandomForestClassifier(
+            n_estimators=150,
+            random_state=42,
+            class_weight="balanced"
+        ))
+    ])
+
+    # Train using the available dataset
+    model.fit(X, y)
+
+    return model
+
+
+# Load application data
 try:
-    model = load_model()
     data = load_dataset()
-except FileNotFoundError as error:
-    st.error(
-        f"Required file not found: {error}. "
-        "Run `python train_model.py` in this project folder first."
-    )
+    model = load_model()
+
+except Exception as error:
+    st.error(f"Unable to load the dataset or train the model: {error}")
     st.stop()
 
-c1, c2, c3 = st.columns(3)
-c1.metric("Records", len(data))
-c2.metric("Average quality score", round(data["quality"].mean(), 2))
-c3.metric("Good-quality records", int((data["quality"] >= 6).sum()))
 
-st.subheader("Dataset preview")
+# Dashboard metrics
+col1, col2, col3 = st.columns(3)
+
+col1.metric("Total Wine Records", len(data))
+
+col2.metric(
+    "Average Quality Score",
+    round(data["quality"].mean(), 2)
+)
+
+col3.metric(
+    "Good Quality Records",
+    int((data["quality"] >= 6).sum())
+)
+
+
+# Dataset preview
+st.subheader("Dataset Preview")
 st.dataframe(data.head(10), use_container_width=True)
 
-st.subheader("Predict uploaded wine samples")
-st.write("Upload a CSV containing the same predictor columns used during training.")
+
+# CSV upload section
+st.subheader("Wine Quality Prediction")
+
+st.write(
+    "Upload a CSV file containing the 11 wine measurement columns."
+)
 
 required_columns = list(model.feature_names_in_)
-template = data.drop(columns=["quality"]).head(5)
+
+sample_data = data.drop(columns=["quality"]).head(5)
 
 st.download_button(
-    "Download sample input CSV",
-    data=template.to_csv(index=False).encode("utf-8"),
+    label="Download Sample Input CSV",
+    data=sample_data.to_csv(index=False).encode("utf-8"),
     file_name="sample_wine_input.csv",
     mime="text/csv"
 )
 
-uploaded = st.file_uploader("Choose wine sample CSV", type=["csv"])
+uploaded_file = st.file_uploader(
+    "Upload Wine CSV File",
+    type=["csv"]
+)
 
-if uploaded is not None:
+
+if uploaded_file is not None:
+
     try:
-        new_data = pd.read_csv(uploaded)
-        missing = [column for column in required_columns if column not in new_data.columns]
+        new_data = pd.read_csv(uploaded_file)
 
-        if missing:
-            st.error("Missing required columns: " + ", ".join(missing))
+        missing_columns = [
+            column for column in required_columns
+            if column not in new_data.columns
+        ]
+
+        if missing_columns:
+
+            st.error(
+                "Missing required columns: "
+                + ", ".join(missing_columns)
+            )
+
         else:
-            # Ignore extra columns and use only the required predictor columns.
+
             prediction_input = new_data[required_columns]
+
             predictions = model.predict(prediction_input)
 
             results = new_data.copy()
+
             results["Prediction"] = [
-                "GOOD QUALITY" if value == 1 else "NEEDS IMPROVEMENT"
-                for value in predictions
+                "GOOD QUALITY" if prediction == 1
+                else "NEEDS IMPROVEMENT"
+                for prediction in predictions
             ]
 
-            st.subheader("Prediction results")
-            st.dataframe(results, use_container_width=True)
+            st.subheader("Prediction Results")
+
+            st.dataframe(
+                results,
+                use_container_width=True
+            )
+
+            good_count = int((predictions == 1).sum())
+
             st.metric(
-                "Predicted good-quality samples",
-                int((predictions == 1).sum())
+                "Predicted Good Quality Samples",
+                good_count
             )
 
             st.download_button(
-                "Download prediction results",
+                label="Download Prediction Results",
                 data=results.to_csv(index=False).encode("utf-8"),
                 file_name="wine_quality_predictions.csv",
                 mime="text/csv"
             )
+
     except Exception as error:
-        st.error(f"Unable to process this CSV file: {error}")
+
+        st.error(f"Unable to process uploaded CSV: {error}")
